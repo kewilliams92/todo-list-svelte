@@ -4,16 +4,35 @@
   import Button from './Button.svelte';
   import { createEventDispatcher, afterUpdate } from 'svelte';
   import FaRegTrashAlt from 'svelte-icons/fa/FaRegTrashAlt.svelte';
-  import { identity } from 'svelte/internal';
+  import { scale, crossfade } from 'svelte/transition';
+  import { flip } from 'svelte/animate';
   afterUpdate(() => {
-    if (autoscroll) listDiv.scrollTo(0, listDivScrollHeight);
-    autoscroll = false;
+    if (scrollOnAdd) {
+      let pos;
+      if (scrollOnAdd === 'top') pos = 0;
+      if (scrollOnAdd === 'bottom') pos = listDivScrollHeight;
+      if (autoscroll) listDiv.scrollTo(0, pos);
+      autoscroll = false;
+    }
   });
+
+  const [send, receive] = crossfade({
+    duration: 400,
+    fallback(node){
+      return scale(node, {start: 0.5, duration: 300})
+    }
+  })
+
   export let todos = null;
   export let error = null;
   export let isLoading = false;
   export let disableAdding = false;
   export let disabledItems = [];
+  export let scrollOnAdd = undefined;
+
+  $: done = todos ? todos.filter((t) => t.completed): [];
+  $: notDone = todos ? todos.filter((t) => !t.completed): [];
+
   let prevTodos = todos;
   let inputText = '';
   let input, listDiv, autoscroll, listDivScrollHeight;
@@ -66,12 +85,16 @@
         {#if todos.length === 0}
           <p class="state-text">No todos yet</p>
         {:else}
+        <div style:display="flex">
+          {#each [done, notDone] as list, index}
+          <div class="list-wrapper">
+          <h2>{index === 0 ? "Done" : "Not Done"}</h2>
           <ul>
-            {#each todos as todo, index (todo.id)}
+            {#each list as todo, index (todo.id)}
               {@const { id, completed, title } = todo}
-              <li>
+              <li animate:flip={{ duration: 300 }}>
                 <slot {todo} {index} {handleToggleTodo}>
-                  <div class:completed>
+                  <div in:receive={{key: id}} out:send={{key: id}} class:completed>
                     <label>
                       <input
                         disabled={disabledItems.includes(id)}
@@ -99,6 +122,9 @@
               </li>
             {/each}
           </ul>
+        </div>
+          {/each}
+        </div>
         {/if}
       </div>
     </div>
@@ -126,11 +152,18 @@
       text-align: center;
     }
     .todo-list {
-      max-height: 200px;
+      max-height: 400px;
       overflow: auto;
+      .list-wrapper {
+        padding: 10px;
+        flex: 1;
+        h2: {
+          margin: 0 0 10px;
+        }
+      }
       ul {
         margin: 0;
-        padding: 10px;
+        padding: 0;
         list-style: none;
         li > div {
           margin-bottom: 5px;
