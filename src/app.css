@@ -1,6 +1,10 @@
 :root {
-    --buttonBgColor: #ff3e00;
-    --buttonTextColor: #fff;
-    background-color: gray;
-    color: white;
+	--buttonBgColor: #ff3e00;
+	--buttonTextColor: #fff;
+}
+
+body{
+    background-color: var(--backgroundColor);
+    color: var(--textColor);
+    font-family: 'Titillium Web', sans-serif;;
 }
